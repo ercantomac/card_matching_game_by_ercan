@@ -2,7 +2,7 @@
 
 A card-matching game.
 
-Working Demo: confident-austin-19dbd2.netlify.app
+## Working Demo: https://confident-austin-19dbd2.netlify.app
 
 ## Getting Started
 
