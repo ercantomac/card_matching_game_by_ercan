@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  //Paint.enableDithering = true;
   runApp(const MyApp());
 }
 
