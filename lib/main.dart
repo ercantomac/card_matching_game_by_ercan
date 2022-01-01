@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  //Paint.enableDithering = true;
   runApp(const MyApp());
 }
 
@@ -22,6 +24,9 @@ class MyApp extends StatelessWidget {
           TargetPlatform.windows: CupertinoPageTransitionsBuilder(),
           TargetPlatform.fuchsia: CupertinoPageTransitionsBuilder(),
           TargetPlatform.linux: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
         }),
       ),
       home: const HomePage(),
@@ -29,7 +34,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyRoute extends MaterialPageRoute {
+class MyRoute extends CupertinoPageRoute {
   MyRoute({dynamic builder}) : super(builder: builder);
   @override
   Duration get transitionDuration => const Duration(milliseconds: 700);
@@ -79,15 +84,14 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: <Widget>[
-            const Text(
+            Text(
               'SELECT DIFFICULTY',
               style: TextStyle(
-                fontSize: 32.0,
+                fontSize: ((sqrt(MediaQuery.of(context).size.width) / 4.5) * (sqrt(MediaQuery.of(context).size.height) / 4.5)),
                 color: Colors.white,
               ),
             ),
             Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
                 for (int index = 0; index < _difficulties.length; index++)
@@ -110,9 +114,12 @@ class _HomePageState extends State<HomePage> {
                       valueListenable: _scale[index],
                       builder: (BuildContext context, double scale, Widget? child) {
                         return Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
                             AnimatedContainer(
-                              padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 20.0),
+                              padding: EdgeInsets.symmetric(
+                                  vertical: ((sqrt(MediaQuery.of(context).size.width) / 6.5) * (sqrt(MediaQuery.of(context).size.height) / 6.5)),
+                                  horizontal: ((sqrt(MediaQuery.of(context).size.width) / 5.5) * (sqrt(MediaQuery.of(context).size.height) / 5.5))),
                               duration: const Duration(milliseconds: 800),
                               curve: Curves.elasticOut,
                               transform: Matrix4.identity()..scale(scale),
@@ -132,10 +139,10 @@ class _HomePageState extends State<HomePage> {
                                 child: Text(
                                   _difficulties[index],
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 24.0,
+                                  style: TextStyle(
+                                    fontSize: ((sqrt(MediaQuery.of(context).size.width) / 5) * (sqrt(MediaQuery.of(context).size.height) / 5)),
                                     color: Colors.white,
-                                    shadows: <Shadow>[
+                                    shadows: const <Shadow>[
                                       Shadow(
                                         offset: Offset(0.0, 1.0),
                                         blurRadius: 1.5,
@@ -155,7 +162,7 @@ class _HomePageState extends State<HomePage> {
                                 'BEST: ${_bestTime[index]}',
                                 style: TextStyle(
                                   color: _color2[index],
-                                  fontSize: 16.0,
+                                  fontSize: ((sqrt(MediaQuery.of(context).size.width) / 6.5) * (sqrt(MediaQuery.of(context).size.height) / 6.5)),
                                 ),
                               ),
                             ),
@@ -177,7 +184,7 @@ class Game extends StatefulWidget {
   final int sizeX, sizeY;
   final Color _color1;
   final String _difficulty;
-  const Game(this.sizeX, this.sizeY, this._color1, this._difficulty);
+  const Game(this.sizeX, this.sizeY, this._color1, this._difficulty, {Key? key}) : super(key: key);
 
   @override
   State<Game> createState() => _GameState();
@@ -367,10 +374,10 @@ class _GameState extends State<Game> with TickerProviderStateMixin {
       Timer(const Duration(milliseconds: 210), () {
         _colors[_first].value = Colors.transparent;
         _colors[_second].value = Colors.transparent;
-        Timer(const Duration(milliseconds: 290), () {
-          _first = -1;
-          _second = -1;
-        });
+        //Timer(const Duration(milliseconds: 290), () {
+        _first = -1;
+        _second = -1;
+        //});
       });
     }
   }
@@ -713,7 +720,9 @@ class _GameState extends State<Game> with TickerProviderStateMixin {
                                       splashColor: Colors.transparent,
                                       onTap: () {
                                         Navigator.of(context).pop();
-                                        _timerAnimation.forward(from: _timerAnimation.value);
+                                        Timer(const Duration(milliseconds: 400), () {
+                                          _timerAnimation.forward(from: _timerAnimation.value);
+                                        });
                                       },
                                       child: const Text(
                                         'CONTINUE',
