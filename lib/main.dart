@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  //Paint.enableDithering = true;
   runApp(const MyApp());
 }
 
@@ -374,10 +373,8 @@ class _GameState extends State<Game> with TickerProviderStateMixin {
       Timer(const Duration(milliseconds: 210), () {
         _colors[_first].value = Colors.transparent;
         _colors[_second].value = Colors.transparent;
-        //Timer(const Duration(milliseconds: 290), () {
         _first = -1;
         _second = -1;
-        //});
       });
     }
   }
