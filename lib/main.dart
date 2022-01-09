@@ -17,6 +17,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Card-Matching Game by Ercan',
       themeMode: ThemeMode.dark,
+      color: Colors.black,
       darkTheme: ThemeData(
         brightness: Brightness.dark,
         pageTransitionsTheme: const PageTransitionsTheme(builders: <TargetPlatform, PageTransitionsBuilder>{
@@ -41,7 +42,7 @@ class MyRoute extends CupertinoPageRoute {
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
-
+  static String _theme = 'dark';
   @override
   State<HomePage> createState() => _HomePageState();
 }
@@ -49,7 +50,9 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final List<String> _difficulties = <String>['EASY', 'CASUAL', 'VETERAN'], _bestTime = <String>['-', '-', '-'];
 
-  final Color _color1 = const Color(0xFFBDBDBD);
+  late Color _complementColor;
+
+  late double _responsiveCoefficient;
 
   final List<Color> _color2 = <Color>[const Color(0xFF2979FF), const Color(0xFFFFD700), const Color(0xFFFF4500)];
 
@@ -66,6 +69,9 @@ class _HomePageState extends State<HomePage> {
     if (_sp.getString('veteranBestTime') != null) {
       _bestTime[2] = '${_sp.getString('veteranBestTime')!} seconds.';
     }
+    if (_sp.getString('Theme') == 'light' && HomePage._theme != 'light') {
+      _changeTheme();
+    }
     setState(() {});
   }
 
@@ -75,106 +81,159 @@ class _HomePageState extends State<HomePage> {
     _getTimes();
   }
 
+  void _changeTheme() async {
+    setState(() {
+      HomePage._theme = (HomePage._theme == 'dark') ? 'light' : 'dark';
+    });
+    SharedPreferences _sp = await SharedPreferences.getInstance();
+    _sp.setString('Theme', HomePage._theme);
+  }
+
   @override
   Widget build(BuildContext context) {
+    _responsiveCoefficient = sqrt(MediaQuery.of(context).size.width) * sqrt(MediaQuery.of(context).size.height);
+    _complementColor = (HomePage._theme == 'dark') ? const Color(0xFFBDBDBD) : const Color(0xFF212121);
     return Scaffold(
-      backgroundColor: const Color(0xFF212121),
+      backgroundColor: (HomePage._theme == 'dark') ? const Color(0xFF212121) : const Color(0xFFBDBDBD),
       body: SafeArea(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: <Widget>[
-            Text(
-              'SELECT DIFFICULTY',
-              style: TextStyle(
-                fontSize: ((sqrt(MediaQuery.of(context).size.width) / 4.5) * (sqrt(MediaQuery.of(context).size.height) / 4.5)),
-                color: Colors.white,
+            Expanded(
+              child: Center(
+                child: Text(
+                  'SELECT DIFFICULTY',
+                  style: TextStyle(
+                    fontSize: _responsiveCoefficient / pow(4.5, 2),
+                    color: (HomePage._theme == 'dark') ? Colors.white : const Color(0xFF212121),
+                  ),
+                ),
               ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: <Widget>[
-                for (int index = 0; index < _difficulties.length; index++)
-                  InkWell(
-                    hoverColor: Colors.transparent,
-                    highlightColor: Colors.transparent,
-                    splashColor: Colors.transparent,
-                    onTap: () {
-                      Navigator.of(context)
-                          .pushReplacement(MyRoute(builder: (_) => Game((index + 4), ((index == 2) ? 5 : 4), _color2[index], _difficulties[index])));
-                    },
-                    onHover: (bool value) {
-                      if (value == true) {
-                        _scale[index].value = 1.15;
-                      } else {
-                        _scale[index].value = 1.0;
-                      }
-                    },
-                    child: ValueListenableBuilder<double>(
-                      valueListenable: _scale[index],
-                      builder: (BuildContext context, double scale, Widget? child) {
-                        return Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            AnimatedContainer(
-                              padding: EdgeInsets.symmetric(
-                                  vertical: ((sqrt(MediaQuery.of(context).size.width) / 6.5) * (sqrt(MediaQuery.of(context).size.height) / 6.5)),
-                                  horizontal: ((sqrt(MediaQuery.of(context).size.width) / 5.5) * (sqrt(MediaQuery.of(context).size.height) / 5.5))),
-                              duration: const Duration(milliseconds: 800),
-                              curve: Curves.elasticOut,
-                              transform: Matrix4.identity()..scale(scale),
-                              transformAlignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: (scale == 1.0) ? _color1 : _color2[index],
-                                borderRadius: BorderRadius.all(Radius.circular((scale == 1.0) ? 36.0 : 10.0)),
-                                boxShadow: <BoxShadow>[
-                                  BoxShadow(
-                                    blurRadius: 12.0,
-                                    spreadRadius: 3.0,
-                                    color: (scale == 1.0) ? _color1.withOpacity(0.4) : _color2[index].withOpacity(0.4),
-                                  )
-                                ],
-                              ),
-                              child: Center(
-                                child: Text(
-                                  _difficulties[index],
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: ((sqrt(MediaQuery.of(context).size.width) / 5) * (sqrt(MediaQuery.of(context).size.height) / 5)),
-                                    color: Colors.white,
-                                    shadows: const <Shadow>[
-                                      Shadow(
-                                        offset: Offset(0.0, 1.0),
-                                        blurRadius: 1.5,
-                                        color: Colors.black26,
-                                      ),
-                                    ],
+            Expanded(
+              child: Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: <ValueListenableBuilder<double>>[
+                    for (int index = 0; index < _difficulties.length; index++)
+                      ValueListenableBuilder<double>(
+                        valueListenable: _scale[index],
+                        builder: (BuildContext context, double scale, Widget? child) {
+                          return AnimatedContainer(
+                            margin: EdgeInsets.only(bottom: (scale == 1.0) ? 0.0 : 32.0),
+                            duration: const Duration(milliseconds: 500),
+                            curve: Curves.easeOutQuart,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                InkWell(
+                                  hoverColor: Colors.transparent,
+                                  highlightColor: Colors.transparent,
+                                  splashColor: Colors.transparent,
+                                  onTap: () {
+                                    Navigator.of(context).pushReplacement(
+                                        MyRoute(builder: (_) => Game((index + 4), ((index == 2) ? 5 : 4), _color2[index], _difficulties[index])));
+                                  },
+                                  onHover: (bool value) {
+                                    if (value == true) {
+                                      _scale[index].value = 1.15;
+                                    } else {
+                                      _scale[index].value = 1.0;
+                                    }
+                                  },
+                                  child: AnimatedContainer(
+                                    padding:
+                                        EdgeInsets.symmetric(vertical: _responsiveCoefficient / pow(6.5, 2), horizontal: _responsiveCoefficient / pow(5.5, 2)),
+                                    duration: const Duration(milliseconds: 800),
+                                    curve: Curves.elasticOut,
+                                    transform: Matrix4.identity()..scale(scale),
+                                    transformAlignment: Alignment.bottomCenter,
+                                    decoration: BoxDecoration(
+                                      color: (scale == 1.0) ? _complementColor : _color2[index],
+                                      borderRadius: BorderRadius.all(Radius.circular((scale == 1.0) ? 36.0 : 10.0)),
+                                      boxShadow: <BoxShadow>[
+                                        BoxShadow(
+                                          blurRadius: 12.0,
+                                          spreadRadius: 3.0,
+                                          color: (scale == 1.0) ? _complementColor.withOpacity(0.4) : _color2[index].withOpacity(0.4),
+                                        )
+                                      ],
+                                    ),
+                                    child: child,
                                   ),
                                 ),
-                              ),
-                            ),
-                            const SizedBox(height: 36.0),
-                            AnimatedOpacity(
-                              opacity: (scale == 1.0) ? 0.0 : 1.0,
-                              duration: const Duration(milliseconds: 600),
-                              curve: Curves.easeInOut,
-                              child: Text(
-                                'BEST: ${_bestTime[index]}',
-                                style: TextStyle(
-                                  color: _color2[index],
-                                  fontSize: ((sqrt(MediaQuery.of(context).size.width) / 6.5) * (sqrt(MediaQuery.of(context).size.height) / 6.5)),
+                                const SizedBox(height: 36.0),
+                                AnimatedOpacity(
+                                  opacity: (scale == 1.0) ? 0.0 : 1.0,
+                                  duration: const Duration(milliseconds: 600),
+                                  curve: Curves.easeInOut,
+                                  child: Text(
+                                    'BEST: ${_bestTime[index]}',
+                                    style: TextStyle(
+                                      color: _color2[index],
+                                      fontSize: _responsiveCoefficient / pow(6.5, 2),
+                                    ),
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-              ],
+                          );
+                        },
+                        child: Center(
+                          child: Text(
+                            _difficulties[index],
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: _responsiveCoefficient / pow(5, 2),
+                              color: (HomePage._theme == 'dark') ? const Color(0xFF212121) : Colors.white,
+                              shadows: const <Shadow>[
+                                Shadow(
+                                  offset: Offset(0.0, 1.0),
+                                  blurRadius: 1.5,
+                                  color: Colors.black26,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
       ),
+      floatingActionButton: Stack(
+        children: <Widget>[
+          Positioned(
+            top: 12.0,
+            right: 0.0,
+            child: FloatingActionButton.extended(
+              backgroundColor: (HomePage._theme == 'dark') ? Colors.black : Colors.white,
+              elevation: 3.0,
+              hoverElevation: 8.0,
+              onPressed: () {
+                _changeTheme();
+              },
+              label: Text(
+                HomePage._theme.toUpperCase(),
+                style: TextStyle(
+                  fontFamily: 'Roboto',
+                  letterSpacing: 0.0,
+                  color: _complementColor,
+                  fontSize: _responsiveCoefficient / pow(6.5, 2),
+                ),
+              ),
+              icon: Icon(
+                (HomePage._theme == 'dark') ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
+                color: _complementColor,
+                size: _responsiveCoefficient / 25,
+              ),
+            ),
+          ),
+        ],
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
     );
   }
 }
@@ -190,7 +249,15 @@ class Game extends StatefulWidget {
 }
 
 class _GameState extends State<Game> with TickerProviderStateMixin {
-  final Color _color2 = const Color(0xFFBDBDBD);
+  void _changeTheme() async {
+    setState(() {
+      HomePage._theme = (HomePage._theme == 'dark') ? 'light' : 'dark';
+    });
+    SharedPreferences _sp = await SharedPreferences.getInstance();
+    _sp.setString('Theme', HomePage._theme);
+  }
+
+  late Color _complementColor;
   final List<IconData> _iconLibrary = <IconData>[
         Icons.anchor,
         Icons.android,
@@ -230,17 +297,14 @@ class _GameState extends State<Game> with TickerProviderStateMixin {
   late int _first = -1, _second = -1, _matchedCnt = 0, _dimension;
   late AnimationController _timerAnimation;
   final List<Color> _randomColors = <Color>[], _bckgrndColors = <Color>[], _frgrndColors = <Color>[];
-  late double _iconSize;
+  late double _iconSize, _responsiveCoefficient;
   late String _finishTime = '', _completeMessage = '';
 
   @override
   void initState() {
     super.initState();
     _dimension = widget.sizeX * widget.sizeY;
-    List<int> _indices = <int>[];
-    for (int i = 0; i < _dimension; i++) {
-      _indices.add(i);
-    }
+    List<int> _indices = Iterable<int>.generate(_dimension).toList();
     for (int j = 0; j < _dimension / 2; j++) {
       Color _tmp;
       while (true) {
@@ -273,10 +337,8 @@ class _GameState extends State<Game> with TickerProviderStateMixin {
       }
       _icons.add(_tmp2);
     }
-    for (int j = 0; j < _dimension / 2; j++) {
-      _randomColors.add(_randomColors[j]);
-      _icons.add(_icons[j]);
-    }
+    _randomColors.addAll(_randomColors.getRange(0, _randomColors.length));
+    _icons.addAll(_icons.getRange(0, _icons.length));
     _indices.shuffle();
     List<Color> tmpColors = <Color>[];
     List<IconData> tmpIcons = <IconData>[];
@@ -381,10 +443,12 @@ class _GameState extends State<Game> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    _iconSize = (sqrt(MediaQuery.of(context).size.width) / sqrt(_icons.length)) * (sqrt(MediaQuery.of(context).size.height) / sqrt(_icons.length)) * 2;
+    _complementColor = (HomePage._theme == 'dark') ? const Color(0xFFE0E0E0) : const Color(0xFF212121);
+    _responsiveCoefficient = sqrt(MediaQuery.of(context).size.width) * sqrt(MediaQuery.of(context).size.height);
+    _iconSize = _responsiveCoefficient / _dimension * 2;
     return SafeArea(
       child: Scaffold(
-        backgroundColor: /*const Color(0xFF212121)*/ Colors.black,
+        backgroundColor: (HomePage._theme == 'dark') ? Colors.black : const Color(0xFFE0E0E0),
         appBar: null,
         body: Stack(
           children: <Widget>[
@@ -393,7 +457,7 @@ class _GameState extends State<Game> with TickerProviderStateMixin {
               child: Container(
                 width: MediaQuery.of(context).size.width,
                 height: 8.0,
-                color: Colors.white,
+                color: (HomePage._theme == 'dark') ? Colors.white : Colors.black,
               ),
             ),
             (_matchedCnt == _dimension)
@@ -406,12 +470,12 @@ class _GameState extends State<Game> with TickerProviderStateMixin {
                             mainAxisAlignment: MainAxisAlignment.center,
                             mainAxisSize: MainAxisSize.min,
                             children: <Widget>[
-                              const Text(
+                              Text(
                                 'You crazy son of a bitch, you did it.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 16.0,
-                                  color: Colors.white,
+                                  color: (HomePage._theme == 'dark') ? Colors.white : Colors.black,
                                 ),
                               ),
                               const SizedBox(height: 36.0),
@@ -553,8 +617,8 @@ class _GameState extends State<Game> with TickerProviderStateMixin {
                         padding: const EdgeInsets.fromLTRB(8.0, 16.0, 8.0, 8.0),
                         crossAxisCount: widget.sizeX,
                         childAspectRatio: MediaQuery.of(context).size.aspectRatio,
-                        mainAxisSpacing: 14.0,
-                        crossAxisSpacing: 14.0,
+                        mainAxisSpacing: _responsiveCoefficient / 81,
+                        crossAxisSpacing: _responsiveCoefficient / 81,
                         children: <ScaleTransition>[
                           for (int index = 0; index < _icons.length; index++)
                             ScaleTransition(
@@ -618,14 +682,14 @@ class _GameState extends State<Game> with TickerProviderStateMixin {
                                                       curve: Curves.easeInOut,
                                                       transformAlignment: Alignment.center,
                                                       decoration: BoxDecoration(
-                                                        color: (scale == 1.0) ? widget._color1 : _color2,
+                                                        color: (scale == 1.0) ? widget._color1 : _complementColor,
                                                         borderRadius: const BorderRadius.all(Radius.circular(8.0)),
                                                         boxShadow: <BoxShadow>[
                                                           BoxShadow(
                                                             blurRadius: 10.0,
                                                             spreadRadius: 3.0,
                                                             color: (color == Colors.transparent)
-                                                                ? ((scale == 1.0) ? widget._color1.withOpacity(0.4) : _color2.withOpacity(0.4))
+                                                                ? ((scale == 1.0) ? widget._color1.withOpacity(0.4) : _complementColor.withOpacity(0.4))
                                                                 : _randomColors[index].withOpacity(0.4),
                                                           )
                                                         ],
@@ -667,9 +731,9 @@ class _GameState extends State<Game> with TickerProviderStateMixin {
                   hoverColor: Colors.transparent,
                   highlightColor: Colors.transparent,
                   splashColor: Colors.transparent,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.pause_circle_outline,
-                    color: Colors.white,
+                    color: (HomePage._theme == 'dark') ? Colors.white : Colors.black,
                     size: 40.0,
                   ),
                   onPressed: () {
@@ -691,81 +755,129 @@ class _GameState extends State<Game> with TickerProviderStateMixin {
                           );
                         },
                         pageBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
-                          return BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 16.8, sigmaY: 16.8),
-                            child: AlertDialog(
-                              elevation: 0.0,
-                              backgroundColor: Colors.transparent,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                              insetPadding: EdgeInsets.zero,
-                              content: const Text(
-                                'GAME PAUSED\n\n',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 32.0,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              actionsPadding: EdgeInsets.zero,
-                              actions: <Row>[
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: <InkWell>[
-                                    InkWell(
-                                      hoverColor: Colors.transparent,
-                                      highlightColor: Colors.transparent,
-                                      splashColor: Colors.transparent,
-                                      onTap: () {
-                                        Navigator.of(context).pop();
-                                        Timer(const Duration(milliseconds: 400), () {
-                                          _timerAnimation.forward(from: _timerAnimation.value);
-                                        });
-                                      },
-                                      child: const Text(
-                                        'CONTINUE',
-                                        style: TextStyle(
-                                          fontSize: 20.0,
-                                          color: Colors.white,
+                          return StatefulBuilder(
+                            builder: (BuildContext context, StateSetter setState) {
+                              return BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 16.8, sigmaY: 16.8),
+                                child: Stack(
+                                  children: <Widget>[
+                                    Positioned(
+                                      top: 12.0,
+                                      right: 12.0,
+                                      child: FloatingActionButton.extended(
+                                        backgroundColor: (HomePage._theme == 'dark') ? Colors.black : Colors.white,
+                                        elevation: 3.0,
+                                        hoverElevation: 8.0,
+                                        onPressed: () {
+                                          _changeTheme();
+                                          setState(() {});
+                                        },
+                                        label: Text(
+                                          HomePage._theme.toUpperCase(),
+                                          style: TextStyle(
+                                            fontFamily: 'Roboto',
+                                            letterSpacing: 0.0,
+                                            color: (HomePage._theme == 'dark') ? const Color(0xFFE0E0E0) : const Color(0xFF212121),
+                                            fontSize: _responsiveCoefficient / pow(6.5, 2),
+                                          ),
+                                        ),
+                                        icon: Icon(
+                                          (HomePage._theme == 'dark') ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
+                                          color: (HomePage._theme == 'dark') ? const Color(0xFFE0E0E0) : const Color(0xFF212121),
+                                          size: _responsiveCoefficient / 25,
                                         ),
                                       ),
                                     ),
-                                    InkWell(
-                                      hoverColor: Colors.transparent,
-                                      highlightColor: Colors.transparent,
-                                      splashColor: Colors.transparent,
-                                      onTap: () {
-                                        Navigator.of(context).pushReplacement(MyRoute(builder: (_) => const HomePage()));
-                                      },
-                                      child: const Text(
-                                        'QUIT',
+                                    AlertDialog(
+                                      elevation: 0.0,
+                                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(24.0))),
+                                      backgroundColor: (HomePage._theme == 'dark') ? Colors.black26 : Colors.white24,
+                                      actionsPadding: EdgeInsets.all(_responsiveCoefficient / 40),
+                                      contentPadding: EdgeInsets.all(_responsiveCoefficient / 20),
+                                      titlePadding: EdgeInsets.all(_responsiveCoefficient / 40),
+                                      insetPadding: EdgeInsets.zero,
+                                      content: Text(
+                                        'GAME PAUSED\n',
+                                        textAlign: TextAlign.center,
                                         style: TextStyle(
-                                          fontSize: 20.0,
-                                          color: Colors.white,
+                                          fontSize: _responsiveCoefficient / pow(4.5, 2),
+                                          color: (HomePage._theme == 'dark') ? Colors.white : Colors.black,
                                         ),
                                       ),
+                                      actions: <Row>[
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: <InkWell>[
+                                            InkWell(
+                                              hoverColor: Colors.transparent,
+                                              highlightColor: Colors.transparent,
+                                              splashColor: Colors.transparent,
+                                              onTap: () {
+                                                Navigator.of(context).pop();
+                                                Timer(const Duration(milliseconds: 400), () {
+                                                  _timerAnimation.forward(from: _timerAnimation.value);
+                                                });
+                                              },
+                                              child: Container(
+                                                margin: EdgeInsets.only(right: _responsiveCoefficient / 60),
+                                                padding: EdgeInsets.symmetric(vertical: _responsiveCoefficient / 49),
+                                                width: _responsiveCoefficient / 4,
+                                                decoration: ShapeDecoration(
+                                                  color: (HomePage._theme == 'dark') ? Colors.black26 : Colors.white24,
+                                                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16.0))),
+                                                ),
+                                                child: Center(
+                                                  child: Text(
+                                                    'CONTINUE',
+                                                    textAlign: TextAlign.center,
+                                                    style: TextStyle(
+                                                      fontSize: _responsiveCoefficient / pow(5.5, 2),
+                                                      color: (HomePage._theme == 'dark') ? Colors.white : Colors.black,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            InkWell(
+                                              hoverColor: Colors.transparent,
+                                              highlightColor: Colors.transparent,
+                                              splashColor: Colors.transparent,
+                                              onTap: () {
+                                                Navigator.of(context).pushReplacement(MyRoute(builder: (_) => const HomePage()));
+                                              },
+                                              child: Container(
+                                                margin: EdgeInsets.only(left: _responsiveCoefficient / 60),
+                                                padding: EdgeInsets.symmetric(vertical: _responsiveCoefficient / 49),
+                                                width: _responsiveCoefficient / 4,
+                                                decoration: ShapeDecoration(
+                                                  color: (HomePage._theme == 'dark') ? Colors.black26 : Colors.white24,
+                                                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16.0))),
+                                                ),
+                                                child: Center(
+                                                  child: Text(
+                                                    'QUIT',
+                                                    textAlign: TextAlign.center,
+                                                    style: TextStyle(
+                                                      fontSize: _responsiveCoefficient / pow(5.5, 2),
+                                                      color: (HomePage._theme == 'dark') ? Colors.white : Colors.black,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
+                              );
+                            },
                           );
                         });
                   },
                 ),
               ),
-            IgnorePointer(
-              child: Container(
-                width: MediaQuery.of(context).size.width,
-                height: MediaQuery.of(context).size.height,
-                decoration: const BoxDecoration(
-                  gradient: RadialGradient(
-                    focal: Alignment.topLeft,
-                    radius: 1.0,
-                    colors: <Color>[Colors.white12, Colors.black12],
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),
